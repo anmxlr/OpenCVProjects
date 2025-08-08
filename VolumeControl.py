@@ -1,11 +1,9 @@
 import mediapipe as mp
 import cv2
-import time
-import numpy as np
-import math
 from ctypes import cast,POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities,IAudioEndpointVolume
+from utils import get_distance
 
 devices = AudioUtilities.GetSpeakers()
 interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL,None)
@@ -20,7 +18,7 @@ cap.set(3,wCam)
 cap.set(4,hCam)
 
 mpHands = mp.solutions.hands
-hands = mpHands.Hands(False,min_detection_confidence=0.7)
+hands = mpHands.Hands(False,min_detection_confidence=0.7,min_tracking_confidence=0.7)
 mpDraw = mp.solutions.drawing_utils
 
 PosList=[(0,0)]*21
@@ -39,9 +37,8 @@ while True:
                         cx, cy = int(lm.x * w), int(lm.y * h)
                         PosList[i] = (cx, cy)
 
-        dist_for_ratio=math.hypot((PosList[4][0]-PosList[3][0]), (PosList[4][1]-PosList[3][1]))
-        dist=math.hypot((PosList[8][0]-PosList[4][0]), (PosList[8][1]-PosList[4][1]))
-
+        dist_for_ratio=get_distance(PosList,4,3)
+        dist=get_distance(PosList,8,4)
         ratio=dist/dist_for_ratio
 
 
@@ -49,6 +46,7 @@ while True:
             ratio=1
         if(ratio>5):
             ratio=5
+
         vol= ((ratio - 1) * 100) / 4
         cv2.line(img, PosList[8], PosList[4], (0, 255 - vol * (2.55), vol * (2.55)), 2)
         cv2.putText(img,f'volume ={str(int(vol))} %', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
